@@ -1,0 +1,9 @@
+<h2>Posts</h2>
+
+<div data-bind='if: posts'>
+	<ul data-bind='foreach: posts'>
+		<li>
+			<a href="/#posts/" data-bind='text: title, attr: {href: ("/#posts/" + permalink)}'></a>
+		</li>
+	</ul>
+</div>
