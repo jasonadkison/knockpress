@@ -45,5 +45,19 @@ app.get('/api/posts/:permalink', function(req, res) {
 	});
 });
 
+// PUT /api/posts/:permalink
+app.put('/api/posts/:permalink', function(req, res) {
+	var post = {
+		title: req.body.title,
+		content: req.body.content,
+		status: req.body.status
+	};
+	Post.update({permalink: req.params.permalink}, post, function(err) {
+		if (err) return res.status(422).json({error: true, message: "Post could not be updated."}).end();
+
+		res.status(200).json({success: true, message: "Post updated successfully."});
+	})
+});
+
 app.listen(port);
 console.log('Server running at http://localhost:' + port);

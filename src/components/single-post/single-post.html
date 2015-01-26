@@ -1,3 +1,27 @@
-<h2 data-bind='text: title'></h2>
+<div data-bind='if: isEditing()' class="post-editor">
+	<form data-bind='submit: saveEditor'>
+		<div class="form-group">
+			<label>Title</label>
+			<input data-bind='value: title' class="form-control" type="text" name="post[title]" placeholder="Title...">
+		</div>
+		<div class="form-group">
+			<label>Content</label>
+			<textarea data-bind='value: content' class="form-control" name="post[content]" placeholder="Content..."></textarea>
+		</div>
+		<div class="form-group">
+			<label>Status</label>
+			<input data-bind='value: status' class="form-control" type="text" name="post[status]">
+		</div>
+		<p>You are currently editing. Save to finalize your changes.</p>
+		<button type="submit">Save Changes</button>
+		<button type="button" data-bind='click: toggleEditMode'>Cancel</button>
+	</form>
+</div>
 
-<p data-bind='text: content'></p>
+<div data-bind='if: !isEditing()' class="post">
+	<h2 data-bind='text: title'></h2>
+
+	<p data-bind='text: content'></p>
+
+	<button data-bind='click: toggleEditMode'>Edit Post</button>
+</div>
