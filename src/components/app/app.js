@@ -6,6 +6,7 @@ define(['knockout', 'text!./app.html'], function(ko, templateMarkup) {
 
 		this.route = ko.observable();
 		this.session = ko.observable();
+		this.loadedOnce = ko.observable(false);
 
 		// fires when the router's current route changes
 		params.route.subscribe(function(route) {
@@ -15,15 +16,17 @@ define(['knockout', 'text!./app.html'], function(ko, templateMarkup) {
 
 		// fires when the observable route changes
 		this.route.subscribe(function(route) {
-			// load the session from the server
-			self.loadSession();
+			// refresh session for current user from the server
+			if (!self.loadedOnce() || self.isLoggedIn()) {
+				self.loadSession();
+			}
+
+			self.loadedOnce(true);
 		});
 
 		this.isLoggedIn = ko.computed(function() {
 			return (this.session() && this.session().email);
-		}, this).extend({
-			async: true
-		});
+		}, this);
 
 		// load the initial route
 		this.route(params.route());
