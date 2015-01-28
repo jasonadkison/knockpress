@@ -1,63 +1,121 @@
 var port = 3000;
-var mongooseUri = 'mongodb://localhost/knockpress';
+var db = 'mongodb://localhost/knockpress';
 
+var _ = require('underscore');
+var generatePassword = require('password-generator');
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+var mongoose = require('mongoose');
 var express = require('express');
+var expressSession = require('express-session');
+var cookieParser = require('cookie-parser')
 var morgan = require('morgan');
+var colors = require('colors');
 var bodyParser = require('body-parser');
+var path = require('path');
+
+global.appRoot = path.resolve(__dirname);
+
+mongoose.connect(db);
+mongoose.connection.on('error', console.error.bind(console, 'mongodb connection error:'));
+mongoose.connection.once('open', function() {
+	console.log('Successfully connected to database %s'.green, db);
+});
+
+// models
+var User = require('./api/models/user');
+
+// seed user
+User.count(function(err, total) {
+	if (err) return console.error(err);
+
+	if (total === 0) {
+		admin = new User({
+			name: 'Admin',
+			email: 'email@email.com',
+			is_admin: true
+		});
+
+		admin.setPassword('password', function(err, thisModel, passwordErr) {
+			if (err) return console.error(err);
+			admin.save(function(err, user) {
+				if (err) return console.error(err);
+				console.log(colors.yellow('user %s seeded'), user)
+			});
+		});
+
+		
+	}
+});
+
+passport.use(User.createStrategy());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 var app = express();
 
-app.use(morgan('combined'));
-app.use(express.static(__dirname + '/src'));
-app.use(bodyParser.urlencoded({ extended: false }));
+// configure express
+
+// Set the header
+app.use(function(req, res, next) {
+	res.set("X-Powered-By", "KnockPress");
+	next();
+});
+
+app.use(cookieParser());
+
+app.use(bodyParser.urlencoded({
+	extended: false
+}));
+
 app.use(bodyParser.json());
 
-var mongoose = require('mongoose');
-mongoose.connect(mongooseUri);
+app.use(morgan('combined'));
 
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'mongodb connection error:'));
-db.once('open', function() {
-	console.log('mongodb connection successful');
+app.use(expressSession({
+	secret: 'keyboard cat'
+}));
+
+app.use(passport.initialize());
+
+app.use(passport.session());
+
+app.use(express.static(__dirname + '/src'));
+
+app.get('/login', function(req, res) {
+	if (req.isAuthenticated()) {
+		res.redirect('/');
+	} else {
+		res.sendFile(appRoot + '/src/login.html');
+	}
 });
 
-var Post = require('./api/models/Post');
-var User = require('./api/models/User');
-
-// Stub posts if none exist
-Post.stubWhenNone(12);
-
-// GET /api/posts
-app.get('/api/posts', function(req, res) {
-	Post.find(function(err, posts) {
-		if (err) return res.status(500).end();
-
-		res.status(200).json(posts).end();
-	});
+app.post('/login', passport.authenticate('local'), function(req, res) {
+	res.redirect('/');
 });
 
-// GET /api/posts/:permalink
-app.get('/api/posts/:permalink', function(req, res) {
-	Post.where({ permalink: req.params.permalink }).findOne(function(err, post) {
-		if (err) return res.status(500).end();
-
-		res.status(200).json(post).end();
-	});
+app.get('/logout', function(req, res) {
+	req.logout();
+	res.redirect('/');
 });
 
-// PUT /api/posts/:permalink
-app.put('/api/posts/:permalink', function(req, res) {
-	var post = {
-		title: req.body.title,
-		content: req.body.content,
-		status: req.body.status
-	};
-	Post.update({permalink: req.params.permalink}, post, function(err) {
-		if (err) return res.status(422).json({error: true, message: "Post could not be updated."}).end();
+app.get('/api/session', function(request, response) {
+	var user = request.user || false;
 
-		res.status(200).json({success: true, message: "Post updated successfully."});
-	})
+	if (user) {
+		response.json(_.omit(user, 'salt', 'hash'));
+	} else {
+		response.status(401); //Authorization required
+		response.json({
+			"error": "Authorization required!",
+			"code": 401
+		})
+	}
 });
 
-app.listen(port);
-console.log('Server running at http://localhost:' + port);
+// API endpoints
+require('./api/endpoints/posts')(app);
+
+app.listen(port, function() {
+	console.log('Server running at http://localhost:%d'.green, port);
+});

@@ -10,11 +10,22 @@ define(["knockout", "crossroads", "hasher"], function(ko, crossroads, hasher) {
     // many possible ways of setting up client-side routes.
 
     return new Router({
-        routes: [
-            { url: '/',          params: { page: 'home-page' } },
-            { url: '/about',     params: { page: 'about-page' } },
-            { url: '/posts/{permalink}', params: { page: 'single-post' } }
-        ]
+        routes: [{
+            url: '/',
+            params: {
+                page: 'home-page'
+            }
+        }, {
+            url: '/about',
+            params: {
+                page: 'about-page'
+            }
+        }, {
+            url: '/posts/{permalink}',
+            params: {
+                page: 'single-post'
+            }
+        }]
     });
 
     function Router(config) {
@@ -30,7 +41,9 @@ define(["knockout", "crossroads", "hasher"], function(ko, crossroads, hasher) {
     }
 
     function activateCrossroads() {
-        function parseHash(newHash, oldHash) { crossroads.parse(newHash); }
+        function parseHash(newHash, oldHash) {
+            crossroads.parse(newHash);
+        }
         crossroads.normalizeFn = crossroads.NORM_AS_OBJECT;
         hasher.initialized.add(parseHash);
         hasher.changed.add(parseHash);
