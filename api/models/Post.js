@@ -1,17 +1,25 @@
 var mongoose = require('mongoose');
 var faker = require('faker');
 var slug = require('slug');
+var colors = require('colors');
 
-var PostSchema = new mongoose.Schema({
+var Post = mongoose.Schema({
 	permalink: { type: String, index: { unique: true }},
 	title: String,
 	content: String,
 	status: String,
 	created_at: { type: Date, default: Date.now },
 	updated_at: { type: Date, default: Date.now }
+}, {
+	collection: 'Post'
 });
 
-PostSchema.statics.createStubs = function(total, cb) {
+Post.pre('save', function(next) {
+	this.permalink = slug(this.title);
+	next();
+});
+
+Post.statics.createStubs = function(total) {
 	total = !isNaN(parseInt(total)) && total > 0 ? total : 0;
 	if (total < 1) return;
 
@@ -22,7 +30,6 @@ PostSchema.statics.createStubs = function(total, cb) {
 	for (var i = 0; i < total; i++) {
 		title = faker.lorem.sentence();
 		post = {
-			permalink: slug(title),
 			title: title,
 			content: faker.lorem.paragraph(),
 			status: 'published'
@@ -34,7 +41,7 @@ PostSchema.statics.createStubs = function(total, cb) {
 	}
 };
 
-PostSchema.statics.removeAll = function(cb) {
+Post.statics.removeAll = function(cb) {
 	this.remove(function(err, removed) {
 		if (err) return;
 
@@ -46,7 +53,7 @@ PostSchema.statics.removeAll = function(cb) {
 	});
 };
 
-PostSchema.statics.stubWhenNone = function(total) {
+Post.statics.stubWhenNone = function(total) {
 	var self = this;
 	this.count(function(err, total) {
 		if (err || total > 0) return;
@@ -55,4 +62,4 @@ PostSchema.statics.stubWhenNone = function(total) {
 	});
 };
 
-module.exports = mongoose.model('Post', PostSchema);
+module.exports = mongoose.model('Post', Post);

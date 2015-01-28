@@ -24,6 +24,7 @@ mongoose.connection.once('open', function() {
 
 // models
 var User = require('./api/models/user');
+var Post = require('./api/models/post');
 
 // seed user
 User.count(function(err, total) {
@@ -45,6 +46,15 @@ User.count(function(err, total) {
 		});
 
 		
+	}
+});
+
+// seed posts
+Post.count(function(err, total) {
+	if (err) return console.error(err);
+
+	if (total === 0) {
+		Post.createStubs(5);
 	}
 });
 
@@ -82,16 +92,11 @@ app.use(passport.session());
 
 app.use(express.static(__dirname + '/src'));
 
-app.get('/login', function(req, res) {
-	if (req.isAuthenticated()) {
-		res.redirect('/');
-	} else {
-		res.sendFile(appRoot + '/src/login.html');
-	}
-});
-
 app.post('/login', passport.authenticate('local'), function(req, res) {
-	res.redirect('/');
+	res.json({
+		message: "Successfully signed in.",
+		code: 200
+	});
 });
 
 app.get('/logout', function(req, res) {
@@ -103,12 +108,12 @@ app.get('/api/session', function(request, response) {
 	var user = request.user || false;
 
 	if (user) {
+		response.status(200);
 		response.json(_.omit(user, 'salt', 'hash'));
 	} else {
-		response.status(401); //Authorization required
 		response.json({
-			"error": "Authorization required!",
-			"code": 401
+			error: "Unauthorized",
+			code: 401
 		})
 	}
 });

@@ -22,7 +22,7 @@
       </ul>
 
       <!-- ko ifnot: $parent.isLoggedIn() -->
-        <login-form class="navbar-form navbar-right" ></login-form>
+        <login-form class="navbar-form navbar-right" params="route: route"></login-form>
       <!-- /ko -->
 
       <!-- ko if: $parent.isLoggedIn() -->
